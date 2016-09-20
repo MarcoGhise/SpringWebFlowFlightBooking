@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<flow xmlns="http://www.springframework.org/schema/webflow"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/webflow
+        http://www.springframework.org/schema/webflow/spring-webflow-2.0.xsd">
+
+	<on-start>
+		<evaluate expression="bookingFactory.createBooking()" result="flowScope.booking" />
+	</on-start>
+
+	<view-state id="routelist" model="booking">
+		<transition to="timetable" on="next">
+			<evaluate
+				expression="bookingValidator.validateRouteFlight(flowScope.booking, messageContext)" />
+			<evaluate expression="bookingFactory.getRouteTimetable(flowScope.booking)"
+				result="flowScope.timetable" />
+		</transition>
+	</view-state>
+
+	<view-state id="timetable" model="booking">
+		<transition to="passengerdetail" on="next">
+			<evaluate
+					expression="bookingValidator.validateTimeTableFlight(flowScope.booking, messageContext)" />
+		</transition>
+		<transition to="routelist" on="previous"></transition>
+	</view-state>
+
+	<view-state id="passengerdetail" model="passenger">
+		<on-render>
+			<evaluate expression="bookingFactory.createPassenger()"
+				result="viewScope.passenger" />			
+			<evaluate expression="bookingFactory.getNumberOfPassenger(flowScope.booking)"
+				result="viewScope.numberofpassenger" />
+			<evaluate expression="bookingFactory.getSeatAlreadyBooked(flowScope.booking)"
+				result="viewScope.seatalreadybooked" />
+		</on-render>
+
+		<transition to="passengerdetail" on="addpassenger">			
+			<evaluate
+				expression="bookingValidator.validatePassenger(viewScope.passenger, messageContext)" />			
+			<evaluate
+				expression="bookingFactory.addPassenger(flowScope.booking,viewScope.passenger)" />
+		</transition>
+		<transition to="frequenttraveller" on="next">
+			<evaluate
+				expression="bookingValidator.validatePassengerNumber(flowScope.booking, messageContext)" />
+		</transition>
+		<transition to="timetable" on="previous"></transition>
+	</view-state>
+	
+	<decision-state id="frequenttraveller">
+		<if test="bookingFactory.isFrequentTraveller(flowScope.booking)" then="congratfrequenttraveller" else="reviewbooking" />
+	</decision-state>
+	<view-state id="reviewbooking">
+		<transition to="bookingconfirmed" on="confirm"></transition>
+		<transition to="passengerdetail" on="previous"></transition>
+	</view-state>
+
+	<view-state id="congratfrequenttraveller">
+		<on-render>
+			<evaluate expression="bookingFactory.getFrequentTraveller(flowScope.booking)"
+				result="viewScope.frequentTraveller" />		
+		</on-render>
+		<transition to="reviewbooking" on="confirm"></transition>
+	</view-state>
+
+	<end-state id="bookingconfirmed" view="bookingconfirmed"></end-state>
+
+
+
+</flow>
